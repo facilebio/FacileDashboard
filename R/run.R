@@ -3,15 +3,19 @@ run <- function(datadir = "~/workspace/facilebio/data",
                 config = NULL,
                 user = Sys.getenv("USER"),
                 app_title = "FacileDashboard", 
-                ...) {
+                gdb = NULL, gdb_idtype = "entrez", ...) {
   checkmate::assert_directory_exists(datadir, "r")
+    
+  if (is.null(gdb)) {
+    gdb <- simple_gdb(id.type = gdb_idtype)
+  }
   
   ui <- shinydashboard::dashboardPage(
     header = fd_header(title = app_title, ...),
     sidebar = fd_sidebar(...),
     body = fd_body(...))
   
-  server <- fd_server(datadir, config, user, ...)
+  server <- fd_server(datadir, config, user, gdb = gdb, ...)
   
   shiny::shinyApp(ui, server)
 }
@@ -88,29 +92,18 @@ fd_body <- function(...) {
 
 fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
                       user = Sys.getenv("USER"), gdb = NULL, ...) {
-  # xfds <- FacileData::exampleFacileDataSet()
-  
-  if (is.null(gdb)) {
-    gdb <- sparrow::getMSigGeneSetDb(
-      collection = c("H", "C2"),
-      species = "human",
-      id.type = "entrez",
-      promote.subcategory.to.collection = TRUE,
-      with.kegg = TRUE)
-    gdb <- gdb[gdb@table$collection == "H" | gdb@table$collection == "C2_CP:KEGG"]
-    gdb <- sparrow::renameCollections(gdb, c(H = "Hallmark", "C2_CP:KEGG" = "KEGG"))
-  }
   
   server <- function(input, output, session) {
     # rfds.path <- reactive(xfds$parent.dir)
     fdslist <- shiny::callModule(facileDataSetList, "fdslist", datadir)
-    
+
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
       "rfds",
       path = fdslist$path,
       user = user)
     
+    # TODO: Create a PCA Analysis module with a GSEA component to it
     pca <- shiny::callModule(
       FacileAnalysis::fpcaAnalysis, "fpca", rfds, ...)
     
@@ -127,3 +120,16 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
   }
 }
 
+# Convenience functions for testing --------------------------------------------
+simple_gdb <- function(id.type = c("entrez", "ensembl")) {
+  id.type <- match.arg(id.type)
+  gdb <- sparrow::getMSigGeneSetDb(
+    collection = c("H", "C2"),
+    species = "human",
+    id.type = id.type,
+    promote.subcategory.to.collection = TRUE,
+    with.kegg = TRUE)
+  gdb <- gdb[gdb@table$collection == "H" | gdb@table$collection == "C2_CP:KEGG"]
+  gdb <- sparrow::renameCollections(gdb, c(H = "Hallmark", "C2_CP:KEGG" = "KEGG"))
+  gdb
+}
