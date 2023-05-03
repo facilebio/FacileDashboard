@@ -88,7 +88,7 @@ fd_body <- function(...) {
 
 fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
                       user = Sys.getenv("USER"), gdb = NULL, ...) {
-  xfds <- FacileData::exampleFacileDataSet()
+  # xfds <- FacileData::exampleFacileDataSet()
   
   if (is.null(gdb)) {
     gdb <- sparrow::getMSigGeneSetDb(
@@ -102,11 +102,13 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
   }
   
   server <- function(input, output, session) {
-    rfds.path <- reactive(xfds$parent.dir)
+    # rfds.path <- reactive(xfds$parent.dir)
+    fdslist <- shiny::callModule(facileDataSetList, "fdslist", datadir)
+    
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
       "rfds",
-      path = rfds.path,
+      path = fdslist$path,
       user = user)
     
     pca <- shiny::callModule(
@@ -124,3 +126,4 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
       "boxplot", rfds, gdb)
   }
 }
+
