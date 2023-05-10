@@ -55,7 +55,7 @@ fd_body <- function(...) {
     shinyjs::useShinyjs(),
     # Change background color to white, we will want to do this with a css file
     # but brute forcing this for now.
-    tags$head(tags$style(HTML('
+    tags$head(tags$style(htmltools::HTML('
       .content-wrapper {
         background-color: #fff;
       }
@@ -132,4 +132,9 @@ simple_gdb <- function(id.type = c("entrez", "ensembl")) {
   gdb <- gdb[gdb@table$collection == "H" | gdb@table$collection == "C2_CP:KEGG"]
   gdb <- sparrow::renameCollections(gdb, c(H = "Hallmark", "C2_CP:KEGG" = "KEGG"))
   gdb
+}
+
+if (FALSE) {
+  gdb <- simple_gdb("ensembl")
+  gdb.entrez <- simple_gdb("entrez")
 }
