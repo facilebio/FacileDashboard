@@ -94,8 +94,7 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
                       user = Sys.getenv("USER"), gdb = NULL, ...) {
   
   server <- function(input, output, session) {
-    # rfds.path <- reactive(xfds$parent.dir)
-    fdslist <- shiny::callModule(facileDataSetList, "fdslist", datadir)
+    fdslist <- facileDataSetSelectServer("fdslist", datadir)
 
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
