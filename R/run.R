@@ -134,6 +134,6 @@ simple_gdb <- function(id.type = c("entrez", "ensembl")) {
 }
 
 if (FALSE) {
-  gdb <- simple_gdb("ensembl")
-  gdb.entrez <- simple_gdb("entrez")
+  if (!exists("gdb")) gdb <- simple_gdb("ensembl")
+  run(gdb = gdb)
 }
