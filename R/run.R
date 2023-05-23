@@ -65,6 +65,7 @@ fd_body <- function(...) {
       tabItem(
         tabName = "dataselect",
         tags$h2("Data Set Selection"),
+        facileDataSetSelectInput("fdslist"),
         FacileShine::filteredReactiveFacileDataStoreUI("rfds")),
       
       tabItem(
@@ -94,7 +95,7 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
                       user = Sys.getenv("USER"), gdb = NULL, ...) {
   
   server <- function(input, output, session) {
-    fdslist <- facileDataSetSelectServer("fdslist", datadir)
+    fdslist <- facileDataSetSelectServer("fdslist", reactive(datadir))
 
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
@@ -105,14 +106,14 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
     # TODO: Create a PCA Analysis module with a GSEA component to it
     pca <- shiny::callModule(
       FacileAnalysis::fpcaAnalysis, "fpca", rfds, ...)
-    
+
     daa <- shiny::callModule(
       FacileAnalysis::fDgeSeaAnalysis, "fdgeseas", rfds, gdb = gdb, ...)
-    
+
     scatter <- shiny::callModule(
       FacileShine::facileScatterPlot,
       "scatterplot", rfds, gdb)
-  
+
     boxplot <- shiny::callModule(
       FacileShine::facileBoxPlot,
       "boxplot", rfds, gdb)
@@ -134,6 +135,5 @@ simple_gdb <- function(id.type = c("entrez", "ensembl")) {
 }
 
 if (FALSE) {
-  if (!exists("gdb")) gdb <- simple_gdb("ensembl")
-  run(gdb = gdb)
+  devtools::load_all("."); if (!exists("gdb")) gdb <- simple_gdb("ensembl"); run(gdb = gdb)
 }
