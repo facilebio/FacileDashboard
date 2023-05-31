@@ -9,6 +9,8 @@ run(
   config = NULL,
   user = Sys.getenv("USER"),
   app_title = "FacileDashboard",
+  gdb = NULL,
+  gdb_idtype = "entrez",
   ...
 )
 }

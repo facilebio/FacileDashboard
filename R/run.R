@@ -1,8 +1,10 @@
 #' Launches the FacileDashboard app
+#' 
+#' @export
 run <- function(datadir = "~/workspace/facilebio/data",
                 config = NULL,
                 user = Sys.getenv("USER"),
-                app_title = "FacileDashboard", 
+                app_title = "OmicsDashboard", 
                 gdb = NULL, gdb_idtype = "entrez", ...) {
   checkmate::assert_directory_exists(datadir, "r")
     
