@@ -138,5 +138,5 @@ simple_gdb <- function(id.type = c("entrez", "ensembl")) {
 }
 
 if (FALSE) {
-  devtools::load_all("."); if (!exists("gdb")) gdb <- simple_gdb("ensembl"); run(gdb = gdb)
+  devtools::load_all("."); if (!exists("gdb")) gdb <- FacileDashboard:::simple_gdb("ensembl"); run(gdb = gdb)
 }

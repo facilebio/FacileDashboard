@@ -42,7 +42,8 @@ version?=latest # `devel` or `latest`
 rport?=8080# rstudio port
 sport?=8888# shiny port
 imagename=datascience/omicsdashboard
-datadir?=${data_dir}
+# you can set this from the environment by default, but I'm putting it here manually
+datadir?= ~/workspace/facilebio/data
 tag=${imagename}:${version}
 rev=$(shell git rev-parse HEAD | cut -c1-7)
 
@@ -123,6 +124,16 @@ inspect:
 	  -it --entrypoint /bin/bash \
 	  ${tag}
 
+# launch the shiny app
+launch:
+	docker run --rm -it -d \
+	  -p ${sport}:3838 \
+	  --env SHINYPROXY_USERNAME=$(USER) \
+	  --volume ${datadir}:/data \
+	  --env data_dir=/data \
+ 	  ${tag}
+	echo "Navigate to: http://${LOCALIP}:${sport}"
+
 # rstudio:
 # 	docker run --rm -it -d \
 # 	  -p ${rport}:8787 \
@@ -133,14 +144,6 @@ inspect:
 # 	 ${tag}
 # 	echo "Navigate to: http://${LOCALIP}:${rport}"
 
-shiny:
-	docker run --rm -it -d \
-	  -p ${sport}:3838 \
-	  --env SHINYPROXY_USERNAME=$(USER) \
-	  --volume ${datadir}:/data \
-	  --env data_dir=/data \
- 	  ${tag}
-	echo "Navigate to: http://${LOCALIP}:${sport}"
 
 # Pushing and pulling images to AWS -------------------------------------------------
 # This assumes you are using the v2 of the cli, look here for inspiration:
