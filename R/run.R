@@ -5,20 +5,15 @@ run <- function(datadir = "~/workspace/facilebio/data",
                 config = NULL,
                 user = Sys.getenv("USER"),
                 app_title = "OmicsDashboard", 
-                gdb = NULL, gdb_idtype = "ensembl", 
                 ...) {
   checkmate::assert_directory_exists(datadir, "r")
-    
-  if (is.null(gdb)) {
-    gdb <- simple_gdb(id.type = gdb_idtype)
-  }
-  
+
   ui <- shinydashboard::dashboardPage(
     header = fd_header(title = app_title, ...),
     sidebar = fd_sidebar(...),
     body = fd_body(...))
   
-  server <- fd_server(datadir, config, user, gdb = gdb, ...)
+  server <- fd_server(datadir, config, user, ...)
   
   shiny::shinyApp(ui, server)
 }
@@ -95,11 +90,12 @@ fd_body <- function(...) {
 }
 
 fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
-                      user = Sys.getenv("USER"), gdb = NULL, ...) {
+                      user = Sys.getenv("USER"), ...) {
   
   server <- function(input, output, session) {
     fdslist <- facileDataSetSelectServer("fdslist", reactive(datadir))
-
+    gdb <- fdslist$gdb
+    
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
       "rfds",
@@ -138,5 +134,9 @@ simple_gdb <- function(id.type = c("entrez", "ensembl")) {
 }
 
 if (FALSE) {
-  devtools::load_all("."); if (!exists("gdb")) gdb <- FacileDashboard:::simple_gdb("ensembl"); run(gdb = gdb)
+  devtools::load_all("."); run()
+}
+
+if (FALSE) {
+  # devtools::load_all("."); if (!exists("gdb")) gdb <- FacileDashboard:::simple_gdb("ensembl"); run(gdb = gdb)
 }
