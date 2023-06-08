@@ -9,7 +9,14 @@ facileDataSetSelectServer(id, datadir, metafn = "meta.yaml", ...)
 \arguments{
 \item{id}{the ID of the module}
 
-\item{datadir}{the director that holds the FacileDataSet directories}
+\item{datadir}{the directory that holds the FacileDataSet directories}
+}
+\value{
+A list with reactive components:
+\enumerate{
+\item \verb{$path()}: The path to the FacileDataSet
+\item \verb{$gdb()}: A GeneSetDb object to match the organism of the FDS at \verb{$path}.
+}
 }
 \description{
 Enumerates the available dataset objects in \code{datadir} once upon invocation.

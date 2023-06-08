@@ -21,6 +21,7 @@ Imports:
     dplyr,
     DT,
     FacileAnalysis (>= 0.98.19),
+    iFacileAnalysis,
     FacileData (>= 0.98.5),
     FacileShine (>= 0.98.0),
     htmltools,
@@ -40,6 +41,7 @@ Suggests:
     withr
 Remotes:
     facilebio/FacileAnalysis,
+    facilebio/iFacileAnalysis,
     facilebio/FacileBiocData,
     facilebio/FacileData,
     facilebio/FacileShine,

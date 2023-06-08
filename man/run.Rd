@@ -8,9 +8,7 @@ run(
   datadir = "~/workspace/facilebio/data",
   config = NULL,
   user = Sys.getenv("USER"),
-  app_title = "FacileDashboard",
-  gdb = NULL,
-  gdb_idtype = "entrez",
+  app_title = "OmicsDashboard",
   ...
 )
 }
