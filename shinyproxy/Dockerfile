@@ -4,7 +4,7 @@ LABEL maintainer="Steve Lianoglou (slianoglou@gmail.com)"
 RUN --mount=type=secret,id=GITHUB_PAT \
     GITHUB_PAT="$(cat /run/secrets/GITHUB_PAT)" \
     Rscript -e "BiocManager::install(c(\
-        'facilebio/FacileDashboard' \
+        'facilebio/FacileDashboard@wtf-docker' \
     ))" \
     && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 

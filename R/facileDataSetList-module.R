@@ -6,10 +6,16 @@
 #' 
 #' @export
 #' @param id the ID of the module
-#' @param datadir the director that holds the FacileDataSet directories
+#' @param datadir the directory that holds the FacileDataSet directories
+#' @return A list with reactive components:
+#' 1. `$path()`: The path to the FacileDataSet
+#' 2. `$gdb()`: A GeneSetDb object to match the organism of the FDS at `$path`.
 facileDataSetSelectServer <- function(id, datadir, metafn = "meta.yaml", ...) {
 
   shiny::moduleServer(id, function(input, output, session) {
+    state <- shiny::reactiveValues(
+      organism = "__initializing__")
+
     # Initialize the selectUI on startup
     dinfo <- shiny::reactive({
       parse_dataset_directory(datadir(), metafn)
@@ -27,11 +33,29 @@ facileDataSetSelectServer <- function(id, datadir, metafn = "meta.yaml", ...) {
       dinfo. <- shiny::req(dinfo())
       chosen <- shiny::req(input$dataselect)
       selected <- dplyr::filter(dinfo., .data$name == .env$chosen)
+      
       path <- selected$path
+      if (state$organism != selected$organism) {
+        state$organism <- selected$organism
+      }
+      
       path
     })
     
-    list(path = fds.path) 
+    gdb <- reactive({
+      org <- state$organism
+      req(org != "__initializing__")
+      gspath <- file.path(datadir(), "_metadata", org, "genesets.qs")
+      if (file.exists(gspath)) {
+        qs::qread(gspath)
+      } else {
+        NULL
+      }
+    })
+    
+    list(
+      path = fds.path,
+      gdb = gdb) 
   })
 }
 
@@ -56,7 +80,7 @@ parse_dataset_directory <- function(datadir, metafn = "meta.yaml", ...) {
     datadir <- "~/workspace/facilebio/data"
   }
   assert_directory_exists(datadir, "r")
-  paths <- dir(datadir, full.names = TRUE)
+  paths <- dir(datadir, "^[a-zA-Z0-9]", full.names = TRUE)
   paths <- paths[file.info(paths)$isdir]
   if (length(paths) == 0) {
     stop("No directories found in datadir: ", datadir)
@@ -74,7 +98,8 @@ parse_dataset_directory <- function(datadir, metafn = "meta.yaml", ...) {
     organism = sapply(ds.meta, "[[", "organism"),
     meta = ds.meta)
   
-  if (file.exists(file.path(metafn))) {
+  meta.fn <- file.path(datadir, metafn)
+  if (file.exists(meta.fn)) {
     # This will may add a `group` column, and rearrange the order of
     # the datasets
   } else {
