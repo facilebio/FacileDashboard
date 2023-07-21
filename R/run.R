@@ -103,9 +103,10 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
       user = user)
     
     # TODO: Create a PCA Analysis module with a GSEA component to it
-    pca <- shiny::callModule(
-      iFacileAnalysis::fpcaAnalysis, "fpca", rfds, ...)
-
+    # pca <- shiny::callModule(
+    #   iFacileAnalysis::fpcaAnalysisServer, "fpca", rfds, ...)
+    pca <- iFacileAnalysis::fpcaAnalysisServer("fpca", rfds, ...)
+    
     daa <- shiny::callModule(
       iFacileAnalysis::fDgeSeaAnalysis, "fdgeseas", rfds, gdb = gdb, ...)
 
