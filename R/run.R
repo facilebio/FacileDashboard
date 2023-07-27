@@ -69,12 +69,12 @@ fd_body <- function(...) {
       tabItem(
         tabName = "pca",
         tags$h2("Principal Components Analysis"),
-        iFacileAnalysis::fpcaAnalysisUI("fpca")),
+        FacileAnalysisShine::fpcaAnalysisUI("fpca")),
       
       tabItem(
         tabName = "daa",
         tags$h2("Differential Abundance Analysis"),
-        iFacileAnalysis::fDgeSeaAnalysisUI("fdgeseas")),
+        FacileAnalysisShine::fDgeSeaAnalysisUI("fdgeseas")),
       
       tabItem(
         tabName = "scatterplot",
@@ -104,11 +104,11 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
     
     # TODO: Create a PCA Analysis module with a GSEA component to it
     # pca <- shiny::callModule(
-    #   iFacileAnalysis::fpcaAnalysisServer, "fpca", rfds, ...)
-    pca <- iFacileAnalysis::fpcaAnalysisServer("fpca", rfds, ...)
+    #   FacileAnalysisShine::fpcaAnalysisServer, "fpca", rfds, ...)
+    pca <- FacileAnalysisShine::fpcaAnalysisServer("fpca", rfds, ...)
     
     daa <- shiny::callModule(
-      iFacileAnalysis::fDgeSeaAnalysis, "fdgeseas", rfds, gdb = gdb, ...)
+      FacileAnalysisShine::fDgeSeaAnalysis, "fdgeseas", rfds, gdb = gdb, ...)
 
     scatter <- shiny::callModule(
       FacileShine::facileScatterPlot,
