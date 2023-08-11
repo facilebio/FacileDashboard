@@ -63,7 +63,7 @@ fd_body <- function(...) {
       tabItem(
         tabName = "dataselect",
         tags$h2("Data Set Selection"),
-        facileDataSetSelectInput("fdslist"),
+        FacileShine::facileDataSetSelectInput("fdslist"),
         FacileShine::filteredReactiveFacileDataStoreUI("rfds")),
       
       tabItem(
@@ -93,7 +93,8 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
                       user = Sys.getenv("USER"), ...) {
   
   server <- function(input, output, session) {
-    fdslist <- facileDataSetSelectServer("fdslist", reactive(datadir))
+    fdslist <- FacileShine::facileDataSetSelectServer(
+      "fdslist", reactive(datadir))
     gdb <- fdslist$gdb
     
     rfds <- shiny::callModule(
@@ -102,9 +103,6 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
       path = fdslist$path,
       user = user)
     
-    # TODO: Create a PCA Analysis module with a GSEA component to it
-    # pca <- shiny::callModule(
-    #   FacileAnalysisShine::fpcaAnalysisServer, "fpca", rfds, ...)
     pca <- FacileAnalysisShine::fpcaAnalysisServer("fpca", rfds, ...)
     
     daa <- shiny::callModule(
