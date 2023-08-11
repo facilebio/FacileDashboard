@@ -74,8 +74,9 @@ fd_body <- function(...) {
       tabItem(
         tabName = "daa",
         tags$h2("Differential Abundance Analysis"),
-        FacileAnalysisShine::fDgeSeaAnalysisUI("fdgeseas")),
-      
+        # FacileAnalysisShine::fDgeSeaAnalysisUI("fdgeseas")),
+        FacileAnalysisShine::fdgeAnalysisUI("fdgeseas")),
+    
       tabItem(
         tabName = "scatterplot",
         tags$h2("Scatter Plot"),
@@ -95,7 +96,8 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
   server <- function(input, output, session) {
     fdslist <- FacileShine::facileDataSetSelectServer(
       "fdslist", reactive(datadir))
-    gdb <- fdslist$gdb
+    # gdb <- fdslist$gdb
+    gdb <- NULL
     
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
@@ -105,8 +107,12 @@ fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
     
     pca <- FacileAnalysisShine::fpcaAnalysisServer("fpca", rfds, ...)
     
-    daa <- shiny::callModule(
-      FacileAnalysisShine::fDgeSeaAnalysis, "fdgeseas", rfds, gdb = gdb, ...)
+    if (grepl("chemoifx", datadir)) {
+      daa <- FacileAnalysisShine::fdgeAnalysisServer("fdgeseas", rfds)
+    } else { 
+      daa <- shiny::callModule(
+        FacileAnalysisShine::fDgeSeaAnalysis, "fdgeseas", rfds, gdb = gdb, ...)
+    }
 
     scatter <- shiny::callModule(
       FacileShine::facileScatterPlot,
