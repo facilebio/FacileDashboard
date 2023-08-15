@@ -1,30 +1,50 @@
 #' Launches the FacileDashboard app
 #' 
+#' @param datadir A directory on the local file system that holds the top-level
+#'   directories of the FacileDataSet objects to be used. This directory will
+#'   also have a `meta.yaml` file that has configuration info for the app.
+#' @param config The path to the configuration file for the app. Deafults to
+#'   `file.path(datadir, "meta.yaml")`. Will be consumed by
+#'   [FacileShine::facileDataSetSelectServer()], among other things.
+#' @param gsdir The directory that holds the `<organism>/geneset.qs` GeneSetDb
+#'   objects to use with the FacileDataSets in `datadir`
+#' @param user the username of the user using the app, you can hotwire this
+#'   with a USER env variable from SHINYPROXY
 #' @export
 run <- function(datadir = "~/workspace/facilebio/data",
-                config = NULL,
+                config = file.path(datadir, "meta.yaml"),
+                gsdir = file.path(datadir, "_metadata"),
                 user = Sys.getenv("USER"),
-                app_title = "OmicsDashboard", 
+                app_title = "OmicsDashboard",
+                debug = FALSE,
                 ...) {
   checkmate::assert_directory_exists(datadir, "r")
-
-  ui <- shinydashboard::dashboardPage(
-    header = fd_header(title = app_title, ...),
-    sidebar = fd_sidebar(...),
-    body = fd_body(...))
+  checkmate::assert_file_exists(config, "r", extension = "yaml")
   
-  server <- fd_server(datadir, config, user, ...)
+  if (checkmate::test_directory(gsdir, "r")) {
+    has_genesets <- length(dir(gsdir, "genesets.qs", recursive = TRUE)) > 0L
+  } else {
+    has_genesets <- FALSE
+  }
+  
+  ui <- shinydashboard::dashboardPage(
+    header = fd_header(title = app_title, debug = debug, ...),
+    sidebar = fd_sidebar(has_genesets = has_genesets, debug = debug, ...),
+    body = fd_body(has_genesets = has_genesets, debug = debug))
+  
+  server <- fd_server(datadir, config, user = user, has_genesets = has_genesets,
+                      debug = debug, ...)
   
   shiny::shinyApp(ui, server)
 }
 
-fd_header <- function(title = "FacileDashboard", ...) {
+fd_header <- function(title = "FacileDashboard", ..., debug = FALSE) {
   shinydashboard::dashboardHeader(title = title)
 }
 
 #' @noRd
 #' @importFrom shinydashboard dashboardSidebar menuItem menuSubItem sidebarMenu
-fd_sidebar <- function(...) {
+fd_sidebar <- function(..., has_genesets = FALSE, debug = FALSE) {
   dashboardSidebar(
     sidebarMenu(
      id = "tabs",
@@ -35,9 +55,13 @@ fd_sidebar <- function(...) {
          "Dataset Selection",
          # icon = shiny::icon("database"),
          tabName = "dataselect"),
-       menuSubItem(
-         "Gene Set Selection",
-         tabName = "genesets")),
+       if (has_genesets) {
+         menuSubItem(
+           "Gene Set Selection",
+           tabName = "genesets")
+       } else {
+         NULL
+       }),
      menuItem("PCA", tabName = "pca"),
      menuItem("Differential Abundance", tabName = "daa"),
      menuItem("Scatter Plot", tabName = "scatterplot"),
@@ -48,7 +72,7 @@ fd_sidebar <- function(...) {
 #' @noRd
 #' @importFrom shinydashboard tabItems tabItem
 #' @importFrom shiny tags
-fd_body <- function(...) {
+fd_body <- function(..., has_genesets = FALSE, debug = FALSE) {
   shinydashboard::dashboardBody(
     shinyjs::useShinyjs(),
     # Change background color to white, we will want to do this with a css file
@@ -74,8 +98,11 @@ fd_body <- function(...) {
       tabItem(
         tabName = "daa",
         tags$h2("Differential Abundance Analysis"),
-        # FacileAnalysisShine::fDgeSeaAnalysisUI("fdgeseas")),
-        FacileAnalysisShine::fdgeAnalysisUI("fdgeseas")),
+        if (has_genesets) {
+          FacileAnalysisShine::fDgeSeaAnalysisUI("fdgeseas", debug = debug)
+        } else {
+          FacileAnalysisShine::fdgeAnalysisUI("fdgeseas", debug = debug)
+        }),
     
       tabItem(
         tabName = "scatterplot",
@@ -90,28 +117,36 @@ fd_body <- function(...) {
   )
 }
 
-fd_server <- function(datadir = "~/workspace/facilebio/data", config = NULL,
-                      user = Sys.getenv("USER"), ...) {
+fd_server <- function(datadir, config, ...,
+                      user = Sys.getenv("USER"), has_genesets = FALSE,
+                      debug = debug) {
+  checkmate::assert_directory_exists(datadir)
+  checkmate::assert_file_exists(config, "r", extension = "yaml")
   
   server <- function(input, output, session) {
+    # Dataset Selection Logic --------------------------------------------------
     fdslist <- FacileShine::facileDataSetSelectServer(
-      "fdslist", reactive(datadir))
-    # gdb <- fdslist$gdb
-    gdb <- NULL
+      "fdslist", reactive(datadir), config)
     
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
       "rfds",
       path = fdslist$path,
       user = user)
+
+    gdb <- reactive({
+      req(FacileShine::initialized(rfds))
+      fdslist$gdb()
+    })
     
+    # Analysis Modules ---------------------------------------------------------
     pca <- FacileAnalysisShine::fpcaAnalysisServer("fpca", rfds, ...)
-    
-    if (grepl("chemoifx", datadir)) {
-      daa <- FacileAnalysisShine::fdgeAnalysisServer("fdgeseas", rfds)
-    } else { 
-      daa <- shiny::callModule(
-        FacileAnalysisShine::fDgeSeaAnalysis, "fdgeseas", rfds, gdb = gdb, ...)
+    if (has_genesets) {
+      daa <- FacileAnalysisShine::fDgeSeaAnalysisServer(
+        "fdgeseas", rfds, gdb = gdb, debug = debug, ...)
+    } else {
+      daa <- FacileAnalysisShine::fdgeAnalysisServer(
+        "fdgeseas", rfds, debug = debug, ...)
     }
 
     scatter <- shiny::callModule(
