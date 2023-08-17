@@ -1,22 +1,43 @@
-#' Launches the FacileDashboard app
+#' Launch the analysis dashboard.
 #' 
-#' @param datadir A directory on the local file system that holds the top-level
-#'   directories of the FacileDataSet objects to be used. This directory will
-#'   also have a `meta.yaml` file that has configuration info for the app.
-#' @param config The path to the configuration file for the app. Deafults to
-#'   `file.path(datadir, "meta.yaml")`. Will be consumed by
-#'   [FacileShine::facileDataSetSelectServer()], among other things.
-#' @param gsdir The directory that holds the `<organism>/geneset.qs` GeneSetDb
-#'   objects to use with the FacileDataSets in `datadir`
-#' @param user the username of the user using the app, you can hotwire this
-#'   with a USER env variable from SHINYPROXY
+#' This presents a dashboard of analysis modules that can be run over a variety
+#' of FacileDataSets.
+#' 
+#' @section App Setup and Configuration:
+#' The app needs a directory on the local filesystem that stores an arbitrary
+#' number of FacileDataSet objects (directories), along with a `meta.yaml` file
+#' and `_metadata/<species>/genesets.qs` files if you want to enable geneset
+#' based exploration. Take a loot at the 
+#' [FacileShine::facileDataSetSelectServer()]) and 
+#' `FacileShine/inst/testdata/fds-directory[/meta.yaml]` structure [and file]
+#' for more information
+#' 
 #' @export
+#' @param datadir A parent directory that 
+#' @param config the meta.yaml file that holds configuration options for this
+#'   app and its modules. Refer to the "App Setup and Configuration" section
+#'   for more detail
+#' @param  gsdir the local file path to the directory that holds
+#'   species-specific genesets
+#' @param user the userid of the person logging in
+#' @param app_title the title of the dashboard
+#' @param debug Default `FALSE`, set to `TRUE` to add debug widgets in the UI.
+#' @param default_filter_covariate the name of the sample-level covariate that
+#'   is selected first in the set of filters used to slice into the datasets
+#'   of the [FacileShine::facileDataSetSelectServer()] module
+#' @param default_covariate you can pick a default covariate name (`"group"`
+#'   is often a good idea) that other widgets will present first for selection.
+#' @param default_collections the name of the collections in the GeneSetDb
+#'   objects that should be activated by default.
 run <- function(datadir = "~/workspace/facilebio/data",
                 config = file.path(datadir, "meta.yaml"),
                 gsdir = file.path(datadir, "_metadata"),
                 user = Sys.getenv("USER"),
-                app_title = "OmicsDashboard",
+                app_title = "FacileDashboard",
                 debug = FALSE,
+                default_filter_covariate = "experiment_id",
+                default_covariate = "group",
+                default_collections = c("Hallmark", "KEGG"),
                 ...) {
   checkmate::assert_directory_exists(datadir, "r")
   checkmate::assert_file_exists(config, "r", extension = "yaml")
@@ -32,13 +53,18 @@ run <- function(datadir = "~/workspace/facilebio/data",
     sidebar = fd_sidebar(has_genesets = has_genesets, debug = debug, ...),
     body = fd_body(has_genesets = has_genesets, debug = debug))
   
-  server <- fd_server(datadir, config, user = user, has_genesets = has_genesets,
-                      debug = debug, ...)
+  server <- fd_server(
+    datadir, config, user = user, has_genesets = has_genesets,
+    default_filter_covariate = default_filter_covariate,
+    default_covariate = default_covariate,
+    default_collections = default_collections,
+    debug = debug, ...)
   
   shiny::shinyApp(ui, server)
 }
 
-fd_header <- function(title = "FacileDashboard", ..., debug = FALSE) {
+
+fd_header <- function(title = "OmicsDashboard", ..., debug = FALSE) {
   shinydashboard::dashboardHeader(title = title)
 }
 
@@ -47,25 +73,11 @@ fd_header <- function(title = "FacileDashboard", ..., debug = FALSE) {
 fd_sidebar <- function(..., has_genesets = FALSE, debug = FALSE) {
   dashboardSidebar(
     sidebarMenu(
-     id = "tabs",
-     menuItem(
-       "Data Selection",
-       tabName = "dataselectdrop",
-       menuSubItem(
-         "Dataset Selection",
-         # icon = shiny::icon("database"),
-         tabName = "dataselect"),
-       if (has_genesets) {
-         menuSubItem(
-           "Gene Set Selection",
-           tabName = "genesets")
-       } else {
-         NULL
-       }),
-     menuItem("PCA", tabName = "pca"),
-     menuItem("Differential Abundance", tabName = "daa"),
-     menuItem("Scatter Plot", tabName = "scatterplot"),
-     menuItem("Box Plot", tabName = "boxplot")
+      menuItem("Dataset Selection", tabName = "dataselect"),
+      menuItem("PCA", tabName = "pca"),
+      menuItem("Differential Abundance", tabName = "daa"),
+      menuItem("Scatter Plot", tabName = "scatterplot"),
+      menuItem("Box Plot", tabName = "boxplot")
     ))
 }
 
@@ -103,7 +115,7 @@ fd_body <- function(..., has_genesets = FALSE, debug = FALSE) {
         } else {
           FacileAnalysisShine::fdgeAnalysisUI("fdgeseas", debug = debug)
         }),
-    
+      
       tabItem(
         tabName = "scatterplot",
         tags$h2("Scatter Plot"),
@@ -119,6 +131,9 @@ fd_body <- function(..., has_genesets = FALSE, debug = FALSE) {
 
 fd_server <- function(datadir, config, ...,
                       user = Sys.getenv("USER"), has_genesets = FALSE,
+                      default_filter_covariate = "experiment_id",
+                      default_covariate = "group",
+                      default_collections = c("Hallmark", "KEGG"),
                       debug = debug) {
   checkmate::assert_directory_exists(datadir)
   checkmate::assert_file_exists(config, "r", extension = "yaml")
@@ -131,52 +146,34 @@ fd_server <- function(datadir, config, ...,
     rfds <- shiny::callModule(
       FacileShine::filteredReactiveFacileDataStore,
       "rfds",
+      default_covariate = default_filter_covariate,
       path = fdslist$path,
       user = user)
-
-    gdb <- reactive({
-      req(FacileShine::initialized(rfds))
-      fdslist$gdb()
-    })
+    
+    gdb <- fdslist$gdb
     
     # Analysis Modules ---------------------------------------------------------
     pca <- FacileAnalysisShine::fpcaAnalysisServer("fpca", rfds, ...)
+    
     if (has_genesets) {
-      daa <- FacileAnalysisShine::fDgeSeaAnalysisServer(
-        "fdgeseas", rfds, gdb = gdb, debug = debug, ...)
+      daaServer <- FacileAnalysisShine::fDgeSeaAnalysisServer
     } else {
-      daa <- FacileAnalysisShine::fdgeAnalysisServer(
-        "fdgeseas", rfds, debug = debug, ...)
+      default_collections <- NULL
+      daaServer <- FacileAnalysisShine::fdgeAnalysisServer
     }
-
+    daa <- daaServer("fdgeseas", rfds, gdb = gdb, debug = debug, 
+                     default_covariate = default_covariate,
+                     default_collections = default_collections, ...)
+    
     scatter <- shiny::callModule(
       FacileShine::facileScatterPlot,
-      "scatterplot", rfds, gdb)
-
+      "scatterplot", rfds, gdb, 
+      default_collections = default_collections)
+    
     boxplot <- shiny::callModule(
       FacileShine::facileBoxPlot,
-      "boxplot", rfds, gdb)
+      "boxplot", rfds, gdb, 
+      default_collections = default_collections)
+    
   }
-}
-
-# Convenience functions for testing --------------------------------------------
-simple_gdb <- function(id.type = c("entrez", "ensembl")) {
-  id.type <- match.arg(id.type)
-  gdb <- sparrow::getMSigGeneSetDb(
-    collection = c("H", "C2"),
-    species = "human",
-    id.type = id.type,
-    promote.subcategory.to.collection = TRUE,
-    with.kegg = TRUE)
-  gdb <- gdb[gdb@table$collection == "H" | gdb@table$collection == "C2_CP:KEGG"]
-  gdb <- sparrow::renameCollections(gdb, c(H = "Hallmark", "C2_CP:KEGG" = "KEGG"))
-  gdb
-}
-
-if (FALSE) {
-  devtools::load_all("."); run()
-}
-
-if (FALSE) {
-  # devtools::load_all("."); if (!exists("gdb")) gdb <- FacileDashboard:::simple_gdb("ensembl"); run(gdb = gdb)
 }

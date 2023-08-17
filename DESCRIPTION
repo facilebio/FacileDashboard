@@ -1,7 +1,7 @@
 Package: FacileDashboard
 Type: Package
 Title: A dashboard for interactive exploration of genomic data.
-Version: 0.98.2
+Version: 0.98.3
 Authors@R: c(
     person(
       "Steve", "Lianoglou",
