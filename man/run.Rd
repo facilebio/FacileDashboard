@@ -2,16 +2,59 @@
 % Please edit documentation in R/run.R
 \name{run}
 \alias{run}
-\title{Launches the FacileDashboard app}
+\title{Launch the analysis dashboard.}
 \usage{
 run(
   datadir = "~/workspace/facilebio/data",
-  config = NULL,
+  config = file.path(datadir, "meta.yaml"),
+  gsdir = file.path(datadir, "_metadata"),
   user = Sys.getenv("USER"),
-  app_title = "OmicsDashboard",
+  app_title = "FacileDashboard",
+  debug = FALSE,
+  default_filter_covariate = "experiment_id",
+  default_covariate = "group",
+  default_collections = c("Hallmark", "KEGG"),
   ...
 )
 }
-\description{
-Launches the FacileDashboard app
+\arguments{
+\item{datadir}{A parent directory that}
+
+\item{config}{the meta.yaml file that holds configuration options for this
+app and its modules. Refer to the "App Setup and Configuration" section
+for more detail}
+
+\item{gsdir}{the local file path to the directory that holds
+species-specific genesets}
+
+\item{user}{the userid of the person logging in}
+
+\item{app_title}{the title of the dashboard}
+
+\item{debug}{Default \code{FALSE}, set to \code{TRUE} to add debug widgets in the UI.}
+
+\item{default_filter_covariate}{the name of the sample-level covariate that
+is selected first in the set of filters used to slice into the datasets
+of the \code{\link[FacileShine:facileDataSetSelectServer]{FacileShine::facileDataSetSelectServer()}} module}
+
+\item{default_covariate}{you can pick a default covariate name (\code{"group"}
+is often a good idea) that other widgets will present first for selection.}
+
+\item{default_collections}{the name of the collections in the GeneSetDb
+objects that should be activated by default.}
 }
+\description{
+This presents a dashboard of analysis modules that can be run over a variety
+of FacileDataSets.
+}
+\section{App Setup and Configuration}{
+
+The app needs a directory on the local filesystem that stores an arbitrary
+number of FacileDataSet objects (directories), along with a \code{meta.yaml} file
+and \verb{_metadata/<species>/genesets.qs} files if you want to enable geneset
+based exploration. Take a loot at the
+\code{\link[FacileShine:facileDataSetSelectServer]{FacileShine::facileDataSetSelectServer()}}) and
+\verb{FacileShine/inst/testdata/fds-directory[/meta.yaml]} structure \link{and file}
+for more information
+}
+
