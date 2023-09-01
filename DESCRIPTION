@@ -1,7 +1,7 @@
 Package: FacileDashboard
 Type: Package
 Title: A dashboard for interactive exploration of genomic data.
-Version: 0.98.00
+Version: 0.98.3
 Authors@R: c(
     person(
       "Steve", "Lianoglou",
@@ -21,7 +21,7 @@ Imports:
     dplyr,
     DT,
     FacileAnalysis (>= 0.98.19),
-    iFacileAnalysis,
+    FacileAnalysisShine,
     FacileData (>= 0.98.5),
     FacileShine (>= 0.98.0),
     htmltools,
@@ -41,19 +41,13 @@ Suggests:
     withr
 Remotes:
     facilebio/FacileAnalysis,
-    facilebio/iFacileAnalysis,
+    facilebio/FacileAnalysisShine,
     facilebio/FacileBiocData,
     facilebio/FacileData,
     facilebio/FacileShine,
     facilebio/FacileViz,
     lianos/sparrow,
     lianos/sparrow.shiny
-biocViews:
-    DifferentialExpression,
-    GeneExpression,
-    GeneSetEnrichment,
-    DimensionReduction,
-    Visualization
 License: Apache License (>= 2.0)
 Encoding: UTF-8
 LazyData: true

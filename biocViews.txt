@@ -1,0 +1,6 @@
+biocViews:
+    DifferentialExpression,
+    GeneExpression,
+    GeneSetEnrichment,
+    DimensionReduction,
+    Visualization
