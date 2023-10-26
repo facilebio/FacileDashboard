@@ -1,0 +1,48 @@
+# This is a minimal example sample of a shinyproxy config file that
+# serves up a FacileDashboard app. The shinyproxy server mounts its
+# local /data/faciledatasets drive into /data for the app container
+proxy:
+  title: Open Analytics Shiny Proxy
+  logo-url: https://www.openanalytics.eu/shinyproxy/logo.png
+  landing-page: /
+  heartbeat-rate: 10000
+  heartbeat-timeout: 60000
+  port: 8080
+  docker:
+    port-range-start: 20000
+  # Authenticaion Examples -----------------------------------------------------
+  admin-groups: shinyproxy-admins
+  # simple auth ................................................................
+  # authentication: simple
+  # users:
+  #   - name: jack
+  #     password: password
+  #     groups: scientists
+  # okta / openid auth .........................................................
+  authentication: openid
+  openid:
+    auth-url: https://SOMECO.okta.com/oauth2/v1/authorize
+    token-url: https://SOMECO.okta.com/oauth2/v1/token
+    jwks-url: https://SOMECO.okta.com/oauth2/v1/keys
+    logout-url: https://SOMECO.okta.com/oauth2/v1/logout?id_token_hint=#{oidcUser.idToken.tokenValue}&post_logout_redirect_uri=http://SHINYPROXYIP:8080/logout-success
+    scopes: [ "openid", "groups" ]
+    roles-claim: groups
+    client-id: CLIENT-ID
+    client-secret: CLIENT-SECRET
+  specs:
+  - id: FacileDashboard
+    container-cmd: ["R", "-e", "FacileDashboard::run('/data', user = Sys.getenv('SHINYPROXY_USERNAME'))"]
+    container-image: faciledashboard:latest
+    container-volumes: [ "/data/faciledatasets:/data" ]
+    container-env:
+      DASHBOARD_DATA_DIR: "/data"
+logging:
+  file:
+    name: shinyproxy.log
+  level:
+    root: INFO
+    eu:
+      openanalytics:
+        containerproxy:
+          # switch to DEBUG to debug SSO integration
+          auth: INFO
